@@ -1,5 +1,9 @@
 # private-cloud-learning-journey
 
+> [!NOTE]
+> This note will contains in bahasa or english, or maybe fixed up between
+> these two lang.
+
 This docs cover learning:
 
 - OpenStack

@@ -2,8 +2,6 @@
 
 - **Date:** July 3rd, 2026
 
-> [!IMPORTANT]
-
 ## Overview
 
 Catatan untuk mengakses dashboard OpenStack horizon tanpa akses publik (tidak memiliki

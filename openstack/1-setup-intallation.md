@@ -257,3 +257,111 @@ cinder_cluster_skip_precheck: "yes"
 > Sedangkan, `network_interface` digunakan sebagai internal network pada OpenStack.</br>
 > Konfigurasi `enable_<service_name>` digunakan untuk mengaktifkan setiap service
 > yang akan di-install.
+
+### 12. Buat Logical Volumes
+
+Karena pada tahap [sebelumnya](#11-konfigurasi-openstack-cluster) mengaktifkan service
+cinder, maka perlu melakukan tahapan untuk membuat logical volumes menggunakan `vgs`.
+
+> [!IMPORTANT]
+> Khusus step ini, **jalankan commands dibawah untuk seluruh node**.
+
+1. Buat physical volume (PV).
+
+   > [!NOTE]
+   > Sesuaikan `/dev/vdb` dengan yang ada
+
+   ```sh
+   sudo pvcreate /dev/vdb
+   ```
+
+2. Buat volume groups (VG)
+
+   ```sh
+   sudo vgcreate cinder-volumes /dev/vdb
+   ```
+
+3. Validasi
+
+   > [!NOTE]
+   > Pastikan output menampilkan volume yang telah dibuat sebelumnya.
+
+   ```sh
+   sudo vgs
+   ```
+
+### 13. Deployment
+
+> [!NOTE]
+> Tahapan deployment ini menggunakan mode `multinode`
+
+> [!TIP]
+> Pastikan `venv` pada [tahap sebelumnya](#2-buat-aktifkan-virtual-environment) sudah aktif
+
+1. Bootstrap servers dengan deps Kolla Deploy
+
+   ```sh
+   kolla-ansible bootstrap-servers -i ./multinode
+   ```
+
+2. Pre-Deployment Check untuk host
+
+   ```sh
+   kolla-ansible prechecks -i ./multinode
+   ```
+
+3. Deploy OpenStack
+
+   ```sh
+   kolla-ansible deploy -i ./multinode
+   ```
+
+   > [!TIP]
+   > Proses akan memakan waktu sekitar ~10 menit.
+
+4. Post-Deployment
+
+   Tahapan ini akan me-generate `admin-openrc.sh`. Berisi ENV dan credentials untuk
+   awal login/setup OpenStack.
+
+   ```sh
+   kolla-ansible post-deploy -i ./multinode
+   ```
+
+### 14. Install OpenStack Client
+
+- Install OpenStack Client versi CLI
+
+  ```
+  pip install openstackclient
+  ```
+
+- Load ENV dan credentials untuk akses OpenStack yang telah di-install
+
+  ```sh
+  source /etc/kolla/admin-openrc.sh
+  ```
+
+- Verify OpenStack cluster (via OpenStack CLI)
+
+  ```sh
+  openstack service list
+  ```
+
+  > [!NOTE]
+  > Jika berhasil, akan menampilkan beberapa service yang sudah di-install.
+  > Misalnya cinder, heat, nova, dll.
+
+- Verify OpenStack run on Containers (via Docker CLI)
+
+  > [!TIP]
+  > Mungkin butuh `sudo` untuk menjalankan docker commands.
+
+  ```sh
+  docker ps
+  ```
+
+  > [!NOTE]
+  > Jika berhasil, maka akan menampilkan containers yang merepresentasikan setiap
+  > komponen OpenStack. Misalnya OpenVSwitch, haproxy, cinder, nova-api, nova-scheduler,
+  > nova-conductor, etc.

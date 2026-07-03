@@ -2,6 +2,29 @@
 
 - **Date:** July 1st, 2026
 
+## Table of Contents
+
+<!--toc:start-->
+
+- [Table of Contents](#table-of-contents)
+- [Overview](#overview)
+- [Topology](#topology)
+- [Installation Guide](#installation-guide)
+  - [1. Install Python & build deps](#1-install-python-build-deps)
+  - [2. Buat & aktifkan virtual environment](#2-buat-aktifkan-virtual-environment)
+  - [3. Pastikan `pip` (package manager Python) up-to-date](#3-pastikan-pip-package-manager-python-up-to-date)
+  - [4. Install ansible dan kolla-ansible](#4-install-ansible-dan-kolla-ansible)
+  - [5. Install deps yang dibutuhkan kolla-ansible](#5-install-deps-yang-dibutuhkan-kolla-ansible)
+  - [6. Copy template konfigurasi yang disediakan kolla-ansible](#6-copy-template-konfigurasi-yang-disediakan-kolla-ansible)
+  - [7. Konfigurasi inventory files](#7-konfigurasi-inventory-files)
+  - [8. Konfigurasi Ansible](#8-konfigurasi-ansible)
+  - [9. Tes konektivitas ansible untuk seluruh node](#9-tes-konektivitas-ansible-untuk-seluruh-node)
+  - [10. Generate kolla passwords untuk deployment](#10-generate-kolla-passwords-untuk-deployment)
+  - [11. Konfigurasi OpenStack Cluster](#11-konfigurasi-openstack-cluster)
+  <!--toc:end-->
+
+---
+
 ## Overview
 
 Untuk menginstall OpenStack, tidak ada **'single source of truth'**. Banyak metode,
@@ -27,6 +50,8 @@ upgrade OpenStack-nya.
 > [host (vm/baremetal)] --> [VM created by OpenStack]
 > ```
 
+---
+
 ## Topology
 
 Komponen pada praktikum:
@@ -44,184 +69,191 @@ Setiap node memiliki hostname berikut:
 - node compute1: `pod-username-compute1`
 - node compute2: `pod-username-compute2`
 
+---
+
 ## Installation Guide
 
-1. Install Python & build deps
+### 1. Install Python & build deps
 
-   ```sh
-   sudo apt update
-   sudo apt install git python3-dev libffi-dev gcc libssl-dev python3-venv
-   ```
+```sh
+sudo apt update
+sudo apt install git python3-dev libffi-dev gcc libssl-dev python3-venv
+```
 
-2. Buat & aktifkan virtual environment
+### 2. Buat & aktifkan virtual environment
 
-   ```sh
-   python3 -m venv kolla-venv
-   source ~/kolla-venv/bin/activate
-   ```
+```sh
+python3 -m venv kolla-venv
+source ~/kolla-venv/bin/activate
+```
 
-3. Pastikan `pip` (package manager Python) up-to-date
+### 3. Pastikan `pip` (package manager Python) up-to-date
 
-   ```sh
-   pip install -U pip
-   ```
+```sh
+pip install -U pip
+```
 
-4. Install ansible dan kolla-ansible
+### 4. Install ansible dan kolla-ansible
 
-   ```sh
-   pip install 'ansible-core>=2.16,<2.17.99'
-   pip install git+https://opendev.org/openstack/kolla-ansible@stable/2025.2
-   ```
+```sh
+pip install 'ansible-core>=2.16,<2.17.99'
+pip install git+https://opendev.org/openstack/kolla-ansible@stable/2025.2
+```
 
-   > [!NOTE]
-   > Kolla ansible yang diinstall saat ini yaitu versi stable (saat ini: v2025.2).
-   > Jika ingin versi berbeda, akses saja [repository kolla-ansible](https://opendev.org/openstack/kolla-ansible)
-   > kemudian pilih branch yang diinginkan (misal `stable/2026.1`)
+> [!NOTE]
+> Kolla ansible yang diinstall saat ini yaitu versi stable (saat ini: v2025.2).
+> Jika ingin versi berbeda, akses saja [repository kolla-ansible](https://opendev.org/openstack/kolla-ansible)
+> kemudian pilih branch yang diinginkan (misal `stable/2026.1`)
 
-5. Install deps yang dibutuhkan kolla, kemudian buat direktori konfigurasi di `/etc/kolla`
+### 5. Install deps yang dibutuhkan kolla-ansible
 
-   Untuk install:
+Install deps yang dibutuhkan kolla-ansible kemudian buat direktori konfigurasi
+di `/etc/kolla`
 
-   ```sh
-   kolla-ansible install-deps
-   ```
+Untuk install:
 
-   untuk buat direktori konfigurasi & memberi akses ke-user, jalankan:
+```sh
+kolla-ansible install-deps
+```
 
-   ```sh
-   sudo mkdir -p /etc/kolla
-   sudo chown $USER:$USER /etc/kolla
-   ```
+untuk buat direktori konfigurasi & memberi akses ke-user, jalankan:
 
-6. Copy template konfigurasi yang disediakan kolla-ansible
+```sh
+sudo mkdir -p /etc/kolla
+sudo chown $USER:$USER /etc/kolla
+```
 
-   Untuk copy konfigurasi `globals.yml` dan `passwords.yml`:
+### 6. Copy template konfigurasi yang disediakan kolla-ansible
 
-   ```sh
-   cp -r kolla-venv/share/kolla-ansible/etc_examples/kolla/* /etc/kolla
-   ```
+Untuk copy konfigurasi `globals.yml` dan `passwords.yml`:
 
-   Untuk copy inventory files ke direktori saat ini:
+```sh
+cp -r kolla-venv/share/kolla-ansible/etc_examples/kolla/* /etc/kolla
+```
 
-   > [!NOTE]
-   > Kolla Ansible memberikan 2 opsi inventory files:
-   >
-   > - `all-in-one`: untuk deployment OpenStack dengan single-node
-   > - `multinode`: untuk deployment OpenStack dengan multi-node atau host yang berbeda
+Untuk copy inventory files ke direktori saat ini:
 
-   ```sh
-   cp kolla-venv/share/kolla-ansible/ansible/inventory/* .
-   ```
+> [!NOTE]
+> Kolla Ansible memberikan 2 opsi inventory files:
+>
+> - `all-in-one`: untuk deployment OpenStack dengan single-node
+> - `multinode`: untuk deployment OpenStack dengan multi-node atau host yang berbeda
 
-7. Konfigurasi inventory files
+```sh
+cp kolla-venv/share/kolla-ansible/ansible/inventory/* .
+```
 
-   Karena menggunakan multinode, maka file yang di-edit yaitu `multinode`.
-   Buat perubahan seperti dibawah ini, JANGAN UBAH part/bagian lain.
+### 7. Konfigurasi inventory files
 
-   ```conf
-   [control]
-   pod-username-controller
+Karena menggunakan multinode, maka file yang di-edit yaitu `multinode`.
+Buat perubahan seperti dibawah ini, JANGAN UBAH part/bagian lain.
 
-   [network]
-   pod-username-controller
+```conf
+[control]
+pod-username-controller
 
-   [compute]
-   pod-username-compute1
-   pod-username-compute2
+[network]
+pod-username-controller
 
-   [monitoring]
-   pod-username-controller
+[compute]
+pod-username-compute1
+pod-username-compute2
 
-   [storage]
-   pod-username-controller
-   pod-username-compute1
-   pod-username-compute2
+[monitoring]
+pod-username-controller
 
-   [deployment]
-   localhost ansible_connection=local
-   ```
+[storage]
+pod-username-controller
+pod-username-compute1
+pod-username-compute2
 
-8. Konfigurasi Ansible
+[deployment]
+localhost ansible_connection=local
+```
 
-   Pertama, buat direktori konfigurasi dulu:
+### 8. Konfigurasi Ansible
 
-   ```sh
-   sudo mkdir -p /etc/ansible
-   ```
+Pertama, buat direktori konfigurasi dulu:
 
-   Buat dan edit file konfigurasi ansible:
+```sh
+sudo mkdir -p /etc/ansible
+```
 
-   ```sh
-   sudo vim /etc/ansible/ansible.cfg
-   ```
+Buat dan edit file konfigurasi ansible:
 
-   Dalam file `ansible.cfg`, berisi:
+```sh
+sudo vim /etc/ansible/ansible.cfg
+```
 
-   ```cfg
-   [defaults]
-   host_key_checking=False
-   pipelining=True
-   forks=100
-   ```
+Dalam file `ansible.cfg`, berisi:
 
-9. Tes konektivitas ansible untuk seluruh node
+```cfg
+[defaults]
+host_key_checking=False
+pipelining=True
+forks=100
+```
 
-   ```sh
-   ansible -i multinode all -m ping
-   ```
+### 9. Tes konektivitas ansible untuk seluruh node
 
-   > [!IMPORTANT]
-   > Pastikan proses ini berhasil/sukses. Jika gagal, perbaiki dulu hostname
-   > setiap node-nya hingga sukses. Pastikan semua node berhasil terhubung
+```sh
+ansible -i multinode all -m ping
+```
 
-10. Generate kolla passwords untuk deployment
+> [!IMPORTANT]
+> Pastikan proses ini berhasil/sukses. Jika gagal, perbaiki dulu hostname
+> setiap node-nya hingga sukses. Pastikan semua node berhasil terhubung
 
-    > [!NOTE]
-    > Tahap ini akan membuat/generate password secara otomatis pada file `/etc/kolla/passwords.yml`
+### 10. Generate kolla passwords untuk deployment
 
-    ```sh
-    kolla-genpwd
-    ```
+> [!NOTE]
+> Tahap ini akan membuat/generate password secara otomatis pada file `/etc/kolla/passwords.yml`
 
-    Untuk melihat password hasil generate:
+```sh
+kolla-genpwd
+```
 
-    ```sh
-    cat /etc/kolla/passwords.yml
-    ```
+Untuk melihat password hasil generate:
 
-11. Konfigurasi OpenStack Cluster
+```sh
+cat /etc/kolla/passwords.yml
+```
 
-    Edit file `/etc/kolla/globals.yml`
+### 11. Konfigurasi OpenStack Cluster
 
-    ```sh
-    sudo vim /etc/kolla/globals.yml
-    ```
+Edit file `/etc/kolla/globals.yml`
 
-    Buat perubahan seperti dibawah ini
+```sh
+sudo vim /etc/kolla/globals.yml
+```
 
-    > [!TIP]
-    > Sesuaikan `openstack_release` dengan yang di-download sebelumnya.
-    > Sesuaikan juga `network_interface`, `neutron_external_interface`, dan
-    > `neutron_external_interface` dengan enterface yang host (node controller)
-    > miliki saat ini (cek dengan `ip a`).Pastikan IP pada `kolla_internal_vip_address`
-    > berada dalam range `network_interface` yang digunakan (yaitu `ens3`)
+Buat perubahan seperti dibawah ini
 
-    ```yml
-    kolla_base_distro: "ubuntu"
-    openstack_release: "2025.2"
-    network_interface: "ens3"
-    neutron_external_interface: "ens4"
-    kolla_internal_vip_address: "192.168.122.100"
-    neutron_plugin_agent: "openvswitch"
-    enable_keystone: "yes"
-    enable_horizon: "yes"
-    enable_neutron_provider_networks: "yes"
-    enable_cinder: "yes"
-    enable_cinder_backend_lvm: "yes"
-    cinder_cluster_skip_precheck: "yes"
-    ```
+> [!TIP]
+> Sesuaikan `openstack_release` dengan yang di-download sebelumnya.
+> Sesuaikan juga `network_interface`, `neutron_external_interface`, dan
+> `neutron_external_interface` dengan enterface yang host (node controller)
+> miliki saat ini (cek dengan `ip a`).Pastikan IP pada `kolla_internal_vip_address`
+> berada dalam range `network_interface` yang digunakan (yaitu `ens3`)
 
-    > [!NOTE]
-    > `neutron_external_interface` digunakan sebagai external network pada
-    > OpenStack. Digunakan sebagai public network. </br>
-    > Sedangkan, `network_interface` digunakan sebagai internal network pada OpenStack.
+```yml
+kolla_base_distro: "ubuntu"
+openstack_release: "2025.2"
+network_interface: "ens3"
+neutron_external_interface: "ens4"
+kolla_internal_vip_address: "192.168.122.100"
+neutron_plugin_agent: "openvswitch"
+enable_keystone: "yes"
+enable_horizon: "yes"
+enable_neutron_provider_networks: "yes"
+enable_cinder: "yes"
+enable_cinder_backend_lvm: "yes"
+cinder_cluster_skip_precheck: "yes"
+```
+
+> [!NOTE]
+> `neutron_external_interface` digunakan sebagai external network pada
+> OpenStack. Digunakan sebagai public network. </br>
+> Sedangkan, `network_interface` digunakan sebagai internal network pada OpenStack.</br>
+> Konfigurasi `enable_<service_name>` digunakan untuk mengaktifkan setiap service
+> yang akan di-install.

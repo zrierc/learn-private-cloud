@@ -104,7 +104,7 @@ Beberapa contoh Kubernetes Distro:
   Enterprise Kubernetes distro. Setup memiliki bootstrap tools sendiri bernama
   `openshift-install`.
 
-- Talos Linux
+- [Talos Linux](https://www.siderolabs.com/talos-linux)
 
   no-os, immutable, API only Kubernetes Distro. Disebut `no-os` karena Talos Linux
   sebenarnya adalah distro Linux yang sudah menyediakan kubernetes. Setup memiliki
@@ -152,6 +152,7 @@ Seluruh VM di-install dengan Ubuntu Server 24.04 LTS. Detail Specs VM:
 
 > [!NOTE]
 > Kubernetes yang akan di install pada lab ini yaitu `v1.32.13`.
+> Network Container Interface (CNI) plugins yang digunakan adalah [Flannel](https://github.com/flannel-io/flannel).
 
 ### 0. Pre-Requisites
 
@@ -356,7 +357,8 @@ Seluruh VM di-install dengan Ubuntu Server 24.04 LTS. Detail Specs VM:
    ```
 
    > [!TIP]
-   > Tunggu dan pastikan semua pods (terutama pods flannel) memiliki status `Running`
+   > Tunggu dan pastikan semua pods (terutama pods [flannel](https://github.com/flannel-io/flannel))
+   > memiliki status `Running`
 
 5. Verifikasi Konfigurasi dan Cluster
 

@@ -69,6 +69,10 @@ Setiap node memiliki hostname berikut:
 - node compute1: `pod-username-compute1`
 - node compute2: `pod-username-compute2`
 
+Detail topologi jaringan:
+
+![OpenStack Lab Topology](./assets/openstack-base-topology.png "OpenStack Lab Topology")
+
 ---
 
 ## Installation Guide

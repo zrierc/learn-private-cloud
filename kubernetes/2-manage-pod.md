@@ -16,6 +16,15 @@ Mempelajari mengelola pods pada Kubernetes. Bagian dari materi Kubernetes API & 
 kubectl get pods
 ```
 
+List semua Pods yang tersedia (termasuk pod yang terkait `namespaces`)
+
+```sh
+kubectl get pods -A
+
+# atau
+kubectl get pods --all-namespaces
+```
+
 ### 2. Get Detail Pod
 
 Melihat detail pod bernama `httpd`

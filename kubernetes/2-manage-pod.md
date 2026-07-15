@@ -6,6 +6,27 @@
 
 Mempelajari mengelola pods pada Kubernetes. Bagian dari materi Kubernetes API & Access.
 
+Pods adalah satuan terkecil dalam Kubernetes Cluster. Pods dapat memiliki beberapa
+container sekaligus, meskipun umumnya Pods memuat satu container saja.
+
+> 💡 **But why?**
+> _The design rationale comes from a concept called tightly coupled processes —
+> sometimes two processes need to share the same network namespace and filesystem
+> as if they were on the same machine, but you still want them in separate containers
+> for isolation and independent builds. So inside Pods, containers communicate with
+> localhost via ports (that's why each container within Pod can't bind the same port)
+> thanks to `pause containers`_
+
+Atau umumnya satu Pod terdiri dari:
+
+- pause container: untuk mengelola networking
+- main/app container: aplikasi berjalan
+- sidecar container: helper dari app container. Misalnya updater/db migrator
+- metrics agent container: container untuk memonitor resources (seperti RAM/CPU)
+  yang digunakan. Misalnya Metrics Server untuk HPA (Horizontal Pod AutoScaling)
+- logging agent container: container untuk menyimpan/mengelola log aplikasi. Misalnya
+  Prometheus agent
+
 ---
 
 ## Manage Pods

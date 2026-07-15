@@ -574,3 +574,196 @@ Untuk melihat hasil Jobs:
 ---
 
 ## StatefulSet
+
+StatefulSet digunakan ketika membutuhkan:
+
+- stable network identities
+  - Pod mendapatkan DNS name yang konsisten
+
+- persistent storage
+  - `PersistentVolumeClaims` untuk memastikan data tetap tersimpan meskipun Pod
+    di restart
+
+- specific order ketika deployment/scaling
+  - Pods dibuat secara sequential (tidak seperti Deployment yang parallel)
+  - Setiap Pod harus `Running` dan `Ready` agar Pod berikutnya bisa mulai berjalan
+  - Pod diberi nomor/index ordinal (0, 1, 2, ...) untuk memastikan urutan
+  - Urutan dibuat: `app-0` -> `app-1` -> `app-2`
+  - Uturan di hapus: `app-2` -> `app-1` -> `app-0` (reverse order)
+
+Tidak seperti Deployment yang memprilakukan Pods sebagai entitas yang identik/sama,
+StatefulSet memiliki nama yang unik dan konsisten yang akan terus sama meskipun
+Pod dibuat ulang.
+
+- Seperti Deployment, akan membuat Pods berdasarkan container specs yang didefinisikan
+- Tidak seperti Deployment, setiap Pod unik dan tidak _interchangeable_
+
+Umumnya ideal digunakan untuk Database, stateful app, atau cluster system, seperti
+MySQL, Casandra, Redis, dll. Ataupun aplikasi yang membutuhkan deployment atau
+termination yang berurutan
+
+### Pre-Requisite
+
+1. Membuat Namespace baru bernama `stateful-lab`
+
+   > [!TIP]
+   > Dapat membuatnya dengan file YAML ataupun langsung dengan `kubectl`
+
+   ```sh
+   kubectl create namespace stateful-lab
+   ```
+
+2. Buat Headless service di `web-svc.yaml`
+
+   > [!NOTE]
+   > StatefulSet membutuhkan Headless Service agar setiap Pod memiliki DNS
+   > yang unik. Headless Service yaitu service yang tidak memiliki internal
+   > virtual IP dan load balancer (`clusterIP: None`).
+
+   ```yaml
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: web-stateful
+     namespace: stateful-lab
+   spec:
+     clusterIP: None # Headless Service
+     selector:
+       app: web
+     ports:
+       - port: 80
+         name: web
+   ```
+
+3. Apply / Deploy Headless Service
+
+   ```sh
+   kubectl apply -f web-svc.yaml
+   ```
+
+### StatefulSet Example
+
+StatefulSet berisi app Nginx dengan 2 replica. File `index.html` persistent
+
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+  namespace: stateful-lab
+spec:
+  serviceName: "web"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      initContainers: # Container 1
+        - name: init-web-data
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "<html><body><h1>Hello from $(hostname)</h1></body></html>" > /usr/share/nginx/html/index.html;
+          volumeMounts:
+            - name: web-data
+              mountPath: /usr/share/nginx/html
+      containers: # Container 2
+        - name: nginx
+          image: nginx:1.29.2
+          ports:
+            - containerPort: 80
+              name: web
+          volumeMounts: # Mount path ke Persistent Storage
+            - name: web-data
+              mountPath: /usr/share/nginx/html
+  volumeClaimTemplates: # Persistent Storage
+    - metadata:
+        name: web-data
+      spec:
+        storageClassName: local-path
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 200Mi
+```
+
+apply / deploy StatefulSet:
+
+```sh
+kubectl apply -f web-statefulset.yaml
+```
+
+### Verify StatefulSet
+
+> [!TIP]
+> StatefulSet di deploy di Namespace `stateful-lab`
+
+1. Verify StatefulSet
+
+   ```sh
+   kubectl get statefulsets -n stateful-lab
+   ```
+
+2. Verify Pods
+
+   ```sh
+   kubectl get pods -n stateful-lab
+   ```
+
+   Pastikan terdapat pod bernama `web-*`. Pod akan sequential seperti `web-0`,
+   `web-1`
+
+3. Check Volume & Storage
+
+   > [!NOTE]
+   > Setiap Pod memiliki `PersistentVolumeClaim` (PVC) nya tersendiri. Sehingga
+   > setiap Pod memiliki storage yang tidak di share dengan Pod lainnya
+
+   ```sh
+   kubectl get pvc -n stateful-lab
+   ```
+
+### Test Behaviour of StatefulSet
+
+1. Write file to PVC via pod `web-0`
+
+   ```sh
+   kubectl exec -n stateful-lab pod/web-0 -- sh -c "echo 'file from web-0 before delete' > /usr/share/nginx/html/fromweb0.txt && ls -la /usr/share/nginx/html"
+   ```
+
+2. Delete Pod `web-0`
+
+   ```sh
+   kubectl delete pod -n stateful-lab web-0
+   ```
+
+3. Tunggu dan cek hingga Pod otomatis dibuat
+
+   ```sh
+   kubectl get pods -n stateful-lab
+   ```
+
+   Pod `web-0` akan otomatis dibuat dengan data yang sama seperti sebelumnya
+
+4. Check content yang ada di Pod `web-0`
+
+   ```sh
+   kubectl exec -n stateful-lab pod/web-0 -- sh -c "cat /usr/share/nginx/html/fromweb0.txt"
+   ```
+
+   Jika konfigurasi yang dilakukan benar/sesuai, maka konten akan tampil kembali
+   karena PVC persistent
+
+5. Verify Persistent Storage
+
+   ```sh
+   kubectl get pvc -n stateful-lab
+   ```
+
+   Pastikan bahwa terdapat PVC: `web-data-web-0`, `web-data-web-1`

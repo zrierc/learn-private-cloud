@@ -6,6 +6,12 @@
 
 Eksplorasi dan belajar mengenai Helm di Kubernetes
 
+### External References
+
+- [Official Helm Site](https://helm.sh/)
+- [Installation Guide](https://helm.sh/docs/intro/install)
+- [Cheat Sheet](https://helm.sh/docs/intro/CheatSheet)
+
 ---
 
 ## Helm
@@ -244,7 +250,20 @@ perintah ini dapat menambah, list, update, atau hapus repository yang diinginkan
    kubectl get all
    ```
 
-3. Delete
+3. See Params/Values Available
+
+   Untuk melihat parameter/field yang tersedia untuk diatur melalui `values.yaml`
+   atau `--set` params, dapat mencarinya dengan:
+
+   ```sh
+   helm show values bitnami/nginx
+   ```
+
+   > [!NOTE]
+   > perintah diatas akan menampilkan field yang tersedia dan dapat diatur untuk
+   > Chart `bitnami/nginx`
+
+4. Delete
 
    Untuk men-delete deployment yang ada, dapat menggunakan perintah:
 
@@ -308,6 +327,10 @@ Mencoba deploy sebuah PostgreSQL dari repository Bitnami dengan info berikut:
    ```
 
 3. Deploy PostgreSQL menggunakan Helm dan attach PVC yang sudah dibuat
+
+   > [!TIP]
+   > Untuk mengetahui detail parameter yang tersedia dapat menggunakan perintah
+   > `helm show values bitnami/postgresql`
 
    ```sh
    helm install mypostgres bitnami/postgresql \

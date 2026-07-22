@@ -43,6 +43,9 @@ Scheduler atau lebih spesifik `kube-scheduler` merupakan core component Kubernet
 yang bertujuan untuk mengelola dan menjadwalkan (_scheduling_) Pod dan Node. Seperti
 Node mana yang harus menjalankan setiap Pod yang ada
 
+> [!TIP]
+> Jika sudah mengerti, baca [topik menarik terkait scheduler](./findings/scheduler-rules-priority-and-conflict-each-other.md)
+
 ---
 
 ## Priority in Kubernetes
